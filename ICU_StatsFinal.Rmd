@@ -1,0 +1,705 @@
+---
+title: "Predicting the Outcome of Intensive Care Unit Patients"
+author: "Glenne Grossman, Viorica Lefter, Robyn Munro, Karishini Ramamoorthi, Elizabeth Warnick"
+date: '2019-04-08'
+output: ioslides_presentation
+
+code_folding: hide
+
+  
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+icu <- read.table("icu_factored.csv", header=TRUE, sep=",", na.strings="NA", dec=".", strip.white=TRUE)
+
+icu <- within(icu, {
+  Consciousness <- 
+  factor(Consciousness, 
+  labels=c('Conscious',
+  'Unconscious', 'Unconscious'))
+})
+library(Rcmdr)
+library(car)
+library(RcmdrMisc)
+library (ggplot2)
+library (sjPlot)
+library (multcomp)
+library (multcompView)
+library (DescTools)
+library (tidyr)
+library(rsample, pos=21)
+library(sjstats)
+library(ggplot2, pos=18)
+library(sjPlot, pos=19)
+library(randomForest, pos=20)
+library(tidyr, pos=21)
+library(rsample, pos=21)
+library(DT, pos=23)
+library(dplyr)
+library(jtools)
+
+library(magrittr)
+library(RcmdrMisc)
+library(Rcmdr)
+library(kableExtra)
+library(sjlabelled)
+library(sjmisc)
+library(devtools)
+devtools::install_github("strengejacke/strengejacke")
+library(strengejacke)
+library(sjPlot)
+library(sjstats, pos=22)
+library(ggplot2)
+library(qwraps2)
+library(gplots)
+library(data.table)
+library(tidyverse)
+library(kableExtra)
+library(ggthemes)
+library(sjPlot)
+library(sjlabelled)
+library(sjmisc)
+library(ggplot2)
+library(Rcmdr)
+library(car)
+library(RcmdrMisc)
+library (ggplot2)
+library (sjPlot)
+library (multcomp)
+library (multcompView)
+library (DescTools)
+library (tidyr)
+
+
+options(qwraps2_markup = "markdown")
+
+```
+
+## Objective 
+To analyze the ICU Admissions dataset to develop a predictive model for Vital Status. 
+
+## Outline
+```{r, out.width = "800px"}
+knitr::include_graphics("agenda.png")
+```
+
+
+# Introduction
+
+## Introduction to Dataset
+
+- 200 Subjects
+- Part of a larger study
+- Main goal to predict the probability of survival to hospital discharge 
+  of patients with risk factors associated with ICU Mortality
+
+
+Author(s): Stanley Lemeshow, Daniel Teres, Jill Spitz Avrunin and Harris Pastides
+Source: Journal of the American Statistical Association, Vol. 83, No. 402 (Jun., 1988), pp. 348- 356
+
+<div class="notes">
+The ICU data set consists of a sample of 200 subjects who were part of a much larger study on survival of patients following admission to an adult intensive care unit (ICU), derived from Hosmer, Lemeshow and Sturdivant (2013) and Friendly (2000).
+
+The major goal of this study was to develop a logistic regression model to predict the probability of survival to hospital discharge of these patients and to study the risk factors associated with ICU mortality. The clinical details of the study are described in Lemeshow, Teres, Avrunin, and Pastides (1988).
+
+</div>
+
+
+## Data collection Method
+
+- Collected by nurses from patients from patients admitted to the adult general ICU at Baystate Medical Center in Springfield, Massachusetts between Feb 1 – Aug 15, 1983.
+- Coronary care, cardiac surgery, burn patients, and patients under 14 were excluded.
+- Information collected at five different times: Admission, 24 hours, 48 hours, ICU discharge, hospital discharge.
+
+##Meet Eleanor
+
+```{r, out.width = "800px"}
+knitr::include_graphics("intro.png")
+```
+
+
+
+
+# Summary of Dataset
+
+## Variables:
+
+```{r, out.width = "800px"}
+knitr::include_graphics("demo.png")
+```
+
+
+
+#Demographics
+
+##Age Pyramid
+<div justify="right"> n=200 </div>
+```{r AgenGender, echo=FALSE, warning=FALSE, message=FALSE}
+ 
+pop_pyr <- read.table("pop_pyr.csv", header=TRUE, sep=",", na.strings="NA", dec=".", strip.white=TRUE)
+library("ggplot2")
+ggplot(data = pop_pyr, 
+       mapping = aes(x = Age, fill = Sex, 
+                     y = ifelse(test = Sex == "Male", 
+                                yes = -Count, no = Count))) +
+  geom_bar(stat = "identity") +
+  scale_y_continuous(labels = abs, limits = max(pop_pyr$Count) * c(-1,1)) +
+  labs(y = "Population") +
+  coord_flip()
+```
+
+
+## Distribution of Race
+<div justify="right"> n=200 </div>
+```{r, message=FALSE, warning=FALSE, echo=FALSE}
+ggplot(icu, aes(x = factor(1), y = "", fill =  factor(Race)))+ 
+  labs(fill="Race", 
+       x="", 
+       y="", 
+       caption="")+
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar(theta = "y") +
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        panel.grid  = element_blank())
+```
+
+
+##Race by Status
+<div justify="right"> n=200 </div>
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+g <- ggplot(icu, aes(Race))
+g + geom_bar(aes(fill=Status), width = 0.5) + 
+  theme(axis.text.x = element_text(angle=65, vjust=0.6)) +
+  labs( 
+       subtitle="", 
+       caption="")
+```
+
+
+
+
+## Percentage Survival by Age
+<div justify="right"> n=200 </div>
+```{r, out.width = "600px"}
+knitr::include_graphics("glenne.png")
+```
+
+
+
+#Shapiro
+## Introduction
+The Shapiro-Wilks Test is a test of normality. <br>
+
+
+Ho= Normally distributed <br>
+Ha= Not normally distributed
+
+## Systolic
+
+Reject the null hypothesis and conclude that systolic bp is not normally distributed.
+```{r echo=FALSE}
+normalityTest(~Systolic, test="shapiro.test", data=icu)
+```
+
+
+## Systolic
+<div justify="right"> n=200 </div>
+```{r echo=FALSE, message=FALSE}
+with(icu, qqPlot(Systolic, dist="norm", id=list(method="y", n=2, 
+  labels=rownames(icu))))
+```
+
+
+##Age
+Reject the null hypothesis and conclude that age is not normally distributed.
+```{r echo=FALSE}
+normalityTest(~Age, test="shapiro.test", data=icu)
+```
+
+
+## Age
+<div justify="right"> n=200 </div>
+```{r echo=FALSE, message=FALSE}
+with(icu, qqPlot(Age, dist="norm", id=list(method="y", n=2, 
+  labels=rownames(icu))))
+```
+
+
+##Heart Rate
+Reject the null hypothesis and conclude that heart rate is not normally distributed.
+```{r echo=FALSE}
+normalityTest(~HeartRate, test="shapiro.test", data=icu)
+```
+
+
+## Heart Rate
+<div justify="right"> n=200 </div>
+```{r echo=FALSE, message=FALSE}
+with(icu, qqPlot(HeartRate, dist="norm", id=list(method="y", n=2, 
+  labels=rownames(icu))))
+```
+
+
+## Conclusion
+None of the continuous variables were normally distributed. 
+
+
+#Wilcoxon
+## Wilcoxon Introduction
+The Wilcoxon signed-rank test is a non-parametric statistical hypothesis test used to compare two related samples, matched samples, or repeated measurements on a single sample to assess whether their population mean ranks differ.
+
+Ho: the distributions are the same
+
+Ha: the distributions are not the same
+
+##Age vs CPR
+```{r}
+with(icu, tapply(Age, CPR, median, na.rm=TRUE))
+wilcox.test(Age ~ CPR, alternative="two.sided", data=icu)
+```
+
+
+Null hypothesis cannot be rejected and we therefore concluded that the distribution of Age is the same for those that had and did not have CPR. 
+
+##Age vs Status
+
+```{r}
+with(icu, tapply(Age, Status, median, na.rm=TRUE))
+wilcox.test(Age ~ Status, alternative="two.sided", data=icu)
+```
+
+
+Null hypothesis can be rejected and we therefore concluded that the distribution of Age and those that lived and died is not the same. 
+
+##Age vs Cancer
+
+```{r}
+with(icu, tapply(Age, Cancer, median, na.rm=TRUE))
+wilcox.test(Age ~ Cancer, alternative="two.sided", data=icu)
+```
+
+
+Null hypothesis cannot be rejected and we therefore concluded that the distribution of Age and those that had and did not have Cancer is the same. 
+
+##HeartRate vs Infection
+
+```{r}
+with(icu, tapply(HeartRate, Infection, median, na.rm=TRUE))
+wilcox.test(HeartRate ~ Infection, alternative="two.sided", data=icu)
+```
+
+
+Null hypothesis can be rejected and we therefore can concluded that the distribution of Heartrate and those that had an infection vs did not have in infection is not the same. 
+
+## Wilcoxon Conclusion
+
+In conclusion, the distributions for Heart Rate for those with an infection or not as well as Age for those who lived and died are not the same. The distribution in age in those who had cancer or did not, and age for those who did and did not have CPR were the same. 
+
+
+
+#Chi-Square Independence Test
+##Introduction
+Chi-Square tests the probability of independence of categorical variables.
+
+
+Ho: No association between the two variables
+
+Ha: Association
+
+
+##Sex
+
+```{r echo=FALSE, message =FALSE}
+sjt.xtab(icu$Sex, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+
+##Race
+
+```{r echo=FALSE, message =FALSE}
+sjt.xtab(icu$Race, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+
+##Service
+
+```{r echo=FALSE, message =FALSE}
+sjt.xtab(icu$Service, icu$Status, 
+show.col.prc=TRUE)
+```
+
+
+##Cancer
+
+```{r echo=FALSE, message =FALSE}
+sjt.xtab(icu$Cancer, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+
+##Renal
+
+```{r echo=FALSE, message =FALSE}
+sjt.xtab(icu$Renal, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+
+##Infection
+
+```{r echo=FALSE, message =FALSE}
+sjt.xtab(icu$Infection, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+
+##Status
+
+```{r echo=FALSE, message =FALSE}
+sjt.xtab(icu$CPR, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+
+##Previous
+
+```{r echo=FALSE, message =FALSE}
+sjt.xtab(icu$Previous, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+
+##Type
+
+```{r echo=FALSE, message =FALSE}
+sjt.xtab(icu$Type, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+
+##Fracture
+
+```{r echo=FALSE, message =FALSE}
+sjt.xtab(icu$Fracture, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+
+##PO2
+
+```{r echo=FALSE, message =FALSE}
+sjt.xtab(icu$PO2, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+
+
+##PH
+
+```{r echo=FALSE, message =FALSE}
+sjt.xtab(icu$PH, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+
+##PCO2
+
+```{r echo=FALSE, message =FALSE}
+sjt.xtab(icu$PCO2, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+
+
+##Bicarbonate
+
+```{r echo=FALSE, message =FALSE}
+sjt.xtab(icu$Bicarbonate, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+
+## Creatinine 
+
+```{r echo=FALSE, message =FALSE}
+sjt.xtab(icu$Creatinine, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+
+##Consciousness
+
+
+```{r echo=FALSE, message =FALSE}
+sjt.xtab(icu$Consciousness, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+
+##Chi-Square Conclusion
+In conclusion, service, renal, infection, CPR, type, creatinine and conciousness each have an association to Status.
+
+
+#Correlation
+##Correlation Introduction
+Correlational analyses are used to look at the relationships between two variables to determine if the two variables are related to each other. 
+
+Since age, heart rate and systolic blood pressure are all not normally distributed, the spearman's rank correlation coefficient was used to test correlation between these variables.
+
+##Spearman's Rank Correlation Coefficient
+<div justify="right"> n=200 </div>
+```{r, echo=FALSE, message=FALSE, warning=FALSE, results=FALSE}
+library (Hmisc)
+
+sjp.corr(icu[,c("Age","HeartRate","Systolic")], corr.method="spearman")
+
+
+
+rcorr.adjust(icu[,
+  c("Age","HeartRate","Systolic"
+  )], type="spearman", 
+  use="complete")
+
+```
+
+
+## Systolic and Age
+<div justify="right"> n=200 </div>
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+scatterplot(Systolic~Age, 
+  regLine=FALSE, smooth=FALSE, 
+  boxplots=FALSE, data=icu)
+```
+
+
+## Systolic and Heart Rate
+<div justify="right"> n=200 </div>
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+scatterplot(Systolic~HeartRate, 
+  regLine=FALSE, smooth=FALSE, 
+  boxplots=FALSE, data=icu)
+```
+
+
+## Age and Heart Rate
+<div justify="right"> n=200 </div>
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+scatterplot(Age~HeartRate, 
+  regLine=FALSE, smooth=FALSE, 
+  boxplots=FALSE, data=icu)
+```
+
+
+##Correlation Matrix
+<div justify="right"> n=200 </div>
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(corrplot)
+icu_notfactored <- read.csv("http://cybr.mcmaster.ca/eH705_W2019/ICUAdmissions.csv") 
+M <- cor(icu_notfactored)
+
+
+
+corrplot(M, method="pie",type="upper")
+```
+
+
+## Correlation Conclusion
+
+From the prior analysis, we can conclude that the variables, systolic, heart rate and age are all not correlated to each other and therefore cannot influence each other when used as predictor variables. Two categorical variables Type and Service are correlated with a value of -0.54, they could influence eachother if used as predictor variables.
+
+
+#Regression
+
+##Regression Introduction
+A logistic regression model is developed in this section to find which variables in the dataset predict status.
+
+Ho: None of the independent variables in the data set predict hospital mortality of ICU patients, based on information available at the time of ICU admissions.
+
+Ha: Some of the independent variables in the data set do predict hospital mortality of ICU patients, based on information available at the time of ICU admissions.
+
+
+## Preliminary Model
+<div justify="right"> n=200 </div>
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+GLM.2 <- glm(Status ~ Age + Bicarbonate + Cancer + Consciousness + CPR + 
+  Creatinine + Fracture + HeartRate + Infection + PCO2 + PH + PO2 + Previous 
+  + Race + Renal + Service + Sex + Systolic + Type, family=binomial(logit), 
+  data=icu)
+
+
+ #plot_model(GLM.2, show.values=TRUE, value.offset = .3)
+```
+```{r, out.width = "700px"}
+knitr::include_graphics("Odds ratios.png")
+```
+
+
+
+##Analysis of Preliminary Model
+Therefore, we can state the predictor variables of CancerYes, Age, TypeEmergency, and ConsciousnessConscious have a statistically significant relation with Vital Status.
+
+
+Based on the odds ratios, Level of Consciousness at admission (no coma) is the greatest predictor (18.95) of Vital Status.
+
+
+##BIC MODEL: Bayesian Information Criterion
+In statistics, the Bayesian information criterion (BIC) for model selection among a finite set of models. It is based, in part, on the likelihood function, and it is closely related to Akaike information criterion (AIC).
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results=FALSE}
+stepwise(GLM.2, direction='forward/backward', criterion='BIC')
+```
+
+##Analysis
+We then verified our findings by using a Step-Wise Forward-Backward Bayesian Regression Model.
+ 
+The BIC model found the following variables to be statistically significant the independent variables identified as significant
+     
+      1. ConciousnessUnconscious
+        
+      2. TypeEmergency
+        
+      3. CancerYes
+        
+      4. Age
+
+We achieved a lower AIC score of 149.1
+
+
+```{r, echo=FALSE, message-FALSE, warning=FALSE, eval=FALSE}
+icu <- within(icu, {fitted.GLM.7 <- fitted(GLM.7) 
+})
+```
+
+
+##Splitting Dataset
+Splitting the dataset into training sample (70%) and testing sample (30%).
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+set.seed(0)
+train_test_split <- initial_split(icu, prop = 0.7)
+train <- training(train_test_split)
+test <- testing(train_test_split)
+```
+
+The training sample size is `r nrow(train)` and the testing sample size is `r nrow(test)`.
+
+
+## Prediction of our Training Model
+
+The intent of our training model is to predict the mortality odds of a patient being diagnosed with a Vital Status = 1 (died) based on the informiation available at the time of ICU admission, specifically using the best predictor variables of CancerYes, Age, TypeEmergency, ConsciousnessConscious, & Systolic.
+
+
+## Logistic Regression of Training 
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+GLM.Train <- glm(Status ~ Cancer + Age + Type + Consciousness + Systolic, 
+  family=binomial(logit), data=train)
+ 
+tab_model(GLM.Train)
+```
+
+
+##Analysis of Training Model
+
+For our Training Model, the following variables as statistically significant at an alpha level of 0.05 in regard to predicting hospital mortality of ICU patients. The variables are listed in order of greatest signifiance to least based on p-values:
+
+    1.  Consciousness(Unconscious): smallest p-value of 0.007
+    3.  Age: 0.010
+    3.  Systolic: 0.01817
+    4.  Type(Emergency): 0.014
+    5.  Cancer(Yes): 0.037
+
+##Analysis of Training Model
+ Null Deviance > Residual Deviance?
+ 
+       YES, decreases 55 points, indicating a good model.
+AIC Value = 101.18
+
+      The lowest AIC so far, a lower AIC value indicated an improvement
+      in the model
+Confidence Intervals:
+
+     None of the confidence intervals include 1, which indicates the 
+     variables are statistically significant. 
+
+## Is the model an improvement?
+ Our training model is an improvement upon our BIC Logistic Regression Model as the significance of each variable based upon p-values aligns with the predictability of the odds ratios. In addition, our AIC value is the lowest at a value of 101.18, with the inclusion of Systolic. 
+ 
+
+##Use Training Model to predict Testing Model
+
+Ho: The predicted values in the training model cannot be used to predict Vital Status and/or hospital mortality of ICU patients, based on information available at the time of ICU admissions; the predictions of the testing model are not statistically significant.
+
+Ha: The predicted values in the training model can be used to predict Vital Status and/or hospital mortality of ICU patients, based on information available at the time of ICU admissions; the predictions of the testing model are not statistically significant.
+
+
+##Correlation
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+predicted <- predict(GLM.Train, newdata=test  ) # # 
+actual <- test$Status  # actual Intention to Return for the testing sample
+x <- as.data.frame(cbind(actual, predicted))  
+```
+
+The relevant null hypothesis is Ho: the predicted values of Status and the actual values are not correlated.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+cor.test(x$actual,x$predicted) # hypothesis test for correlation
+```
+
+##Plot the predicted vs the actual values.  
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(ggplot2)
+ggplot(data=x, aes(x=predicted, y=actual)) + geom_jitter(width=0.15) + geom_smooth(method=lm)
+
+```
+
+##Regression of actual on predicted
+
+```{r, out.width = "800px"}
+knitr::include_graphics("regression.png")
+```
+
+
+
+#Conclusion
+
+##Limitations
+- Sample Size (Original sample had 2700 people)
+    + Our sample size, n = 200 and variables k = 19...not ideal for BIC
+- Study results not suggested for multiple ICU admission scenarios
+- High error rate in data collection
+  
+
+##Conclusion
+Model to predict vital status included (in order of high to low statistical significance:
+
+  1. Consciousness(Deep Stupor, Coma)
+  2. Age
+  3. Systolic
+  4. Type(Emergency) 
+  5. Cancer(Yes)
+  
+- Accuracy of training model to predict mortality = 15.9%
+
+- Based on our analysis, we DO NOT reject the null hypothesis.
+
+##Remember Eleanor? What happened to her?
+
+```{r, out.width = "800px"}
+knitr::include_graphics("intro.png")
+```
+
+##Prognosis
+
+```{r, out.width = "800px"}
+knitr::include_graphics("conclusion.png")
+```
+
