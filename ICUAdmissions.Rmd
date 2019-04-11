@@ -78,15 +78,26 @@ icu <- within(icu, {
 
 #Executive Summary
 
-#Introduction
+#Objectives
 
 #Methodology
 
 #Analysis
-##Introduction to the Dataset
+##Analysis of Attributes
 ###Demographics
 ###Admissions
 ###Clinical
+###Proportions
+
+##Distribution
+
+##Differences between Groups
+
+##Variance Testing
+
+##Independence Test
+
+##Correlation
 
 ##Predictive Model
 
@@ -243,6 +254,8 @@ tab_model(actualvpredict)
 
 #Key Findings
 
+#Limitations 
 #Health System Reccomendations
 
+#References
 
