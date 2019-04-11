@@ -1,0 +1,248 @@
+---
+title: "ICUAdmissionsFinal"
+author: "Glenne Grossman, Viorica Lefter, Robyn Munro, Karishini Ramamoorthi, Elizabeth Warnick"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output:
+  html_document: 
+    number_sections: TRUE
+    code_folding: hide
+    toc: yes
+    toc_float: 
+      toc_collapsed: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(Rcmdr)
+library(car)
+library(RcmdrMisc)
+library (ggplot2)
+library (sjPlot)
+library (multcomp)
+library (multcompView)
+library (DescTools)
+library (tidyr)
+library(rsample, pos=21)
+library(sjstats)
+library(ggplot2, pos=18)
+library(sjPlot, pos=19)
+library(randomForest, pos=20)
+library(tidyr, pos=21)
+library(rsample, pos=21)
+library(DT, pos=23)
+library(dplyr)
+library(jtools)
+
+library(magrittr)
+library(RcmdrMisc)
+library(Rcmdr)
+library(kableExtra)
+library(sjlabelled)
+library(sjmisc)
+library(devtools)
+devtools::install_github("strengejacke/strengejacke")
+library(strengejacke)
+library(sjPlot)
+library(sjstats, pos=22)
+library(ggplot2)
+library(qwraps2)
+library(gplots)
+library(data.table)
+library(tidyverse)
+library(kableExtra)
+library(ggthemes)
+library(sjPlot)
+library(sjlabelled)
+library(sjmisc)
+library(ggplot2)
+library(Rcmdr)
+library(car)
+library(RcmdrMisc)
+library (ggplot2)
+library (sjPlot)
+library (multcomp)
+library (multcompView)
+library (DescTools)
+library (tidyr)
+
+icu <- read.table("icu_factored.csv", header=TRUE, sep=",", na.strings="NA", dec=".", strip.white=TRUE)
+
+icu <- within(icu, {
+  Consciousness <- 
+  factor(Consciousness, 
+  labels=c('Conscious',
+  'Unconscious', 'Unconscious'))
+})
+```
+
+#Executive Summary
+
+#Introduction
+
+#Methodology
+
+#Analysis
+##Introduction to the Dataset
+###Demographics
+###Admissions
+###Clinical
+
+##Predictive Model
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+DemographicModel <- glm(Status ~ Age + 
+  + Race  + Sex , family=binomial(logit), 
+  data=icu)
+
+tab_model(DemographicModel)
+
+
+ plot_model(DemographicModel, show.values=TRUE, value.offset = .3)
+ 
+ ##lets look at just age
+```
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+DemographicModel <- glm(Status ~ Age, family=binomial(logit), 
+  data=icu)
+
+tab_model(DemographicModel)
+
+
+ plot_model(DemographicModel, show.values=TRUE, value.offset = .3)
+ 
+ 
+```
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+AdmissionsModel <- glm(Status ~   Consciousness + CPR + 
+   + Previous + Service + Type, family=binomial(logit), 
+  data=icu)
+
+tab_model(AdmissionsModel)
+
+
+ plot_model(AdmissionsModel, show.values=TRUE, value.offset = .3)
+ 
+ ##From this we keep Consciousness and Type
+```
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+AdmissionsModel2 <- glm(Status ~   Consciousness + 
+    Type, family=binomial(logit), 
+  data=icu)
+
+tab_model(AdmissionsModel2)
+
+
+ plot_model(AdmissionsModel2, show.values=TRUE, value.offset = .3)
+ 
+ ##Still both significant
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ClinicalModel <- glm(Status ~  Bicarbonate + Cancer +  
+  Creatinine + Fracture + HeartRate + Infection + PCO2 + PH + PO2 + Renal  +  Systolic , family=binomial(logit), 
+  data=icu)
+
+tab_model(ClinicalModel)
+
+
+ plot_model(ClinicalModel, show.values=TRUE, value.offset = .3)
+ 
+ ##From this we keep Systolic
+```
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ClinicalModel2 <- glm(Status ~    Systolic , family=binomial(logit), 
+  data=icu)
+
+tab_model(ClinicalModel2)
+
+
+ plot_model(ClinicalModel2, show.values=TRUE, value.offset = .3)
+ 
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+FullModel <- glm(Status ~ Age + Bicarbonate + Cancer + Consciousness + CPR + 
+  Creatinine + Fracture + HeartRate + Infection + PCO2 + PH + PO2 + Previous 
+  + Race + Renal + Service + Sex + Systolic + Type, family=binomial(logit), 
+  data=icu)
+
+tab_model(FullModel)
+
+
+ plot_model(FullModel, show.values=TRUE, value.offset = .3)
+ 
+ ##From this we keep age Cancer and Consciousness and Type
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+FullModel2 <- glm(Status ~ Age  + Cancer + Consciousness +Type, family=binomial(logit), 
+  data=icu)
+
+tab_model(FullModel2)
+
+
+ plot_model(FullModel2, show.values=TRUE, value.offset = .3)
+ 
+ ##From this we keep age Cancer and Consciousness and Type
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results=FALSE}
+stepwise(FullModel, direction='forward/backward', criterion='BIC')
+##doesn't get Cancer
+```
+
+```{r, echo=FALSE, message-FALSE, warning=FALSE, eval=FALSE}
+icu <- within(icu, {fitted.GLM.7 <- fitted(GLM.7) 
+})
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+set.seed(0)
+train_test_split <- initial_split(icu, prop = 0.7)
+train <- training(train_test_split)
+test <- testing(train_test_split)
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+Train <- glm(Status ~  Age + Type + Consciousness, 
+  family=binomial(logit), data=train)
+ 
+tab_model(Train)
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+Train <- glm(Status ~  Age + Type + Consciousness, 
+  family=binomial(logit), data=train)
+ 
+tab_model(Train)
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+predicted <- predict(Train, newdata=test  ) # # 
+actual <- test$Status  # actual Intention to Return for the testing sample
+x <- as.data.frame(cbind(actual, predicted))  
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+cor.test(x$actual,x$predicted) # hypothesis test for correlation
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(ggplot2)
+ggplot(data=x, aes(x=predicted, y=actual)) + geom_jitter(width=0.15) + geom_smooth(method=lm)
+actualvpredict <- lm(actual ~ predicted, x)
+tab_model(actualvpredict)
+```
+
+
+#Key Findings
+
+#Health System Reccomendations
+
+
