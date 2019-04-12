@@ -65,6 +65,8 @@ library (multcomp)
 library (multcompView)
 library (DescTools)
 library (tidyr)
+library (plotly)
+
 
 icu <- read.table("icu_factored.csv", header=TRUE, sep=",", na.strings="NA", dec=".", strip.white=TRUE)
 
@@ -85,8 +87,863 @@ icu <- within(icu, {
 #Analysis
 ##Introduction to the Dataset
 ###Demographics
+<center><h3><b>Analysis of Atributed</b></h3></center>
+
+<h4><b> DEMOGRAPHICS </b></h4>
+The demographic variables of the participants in this study include age, sex, and race.
+
+<b> Sex </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable <- table(icu$Sex)
+lbls <- paste(names(mytable), "\n", mytable, sep="")
+pie(mytable, labels = lbls, 
+   main="Pie Chart of Distribution by Sex")
+```
+
+
+<b> Race </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable1 <- table(icu$Race)
+lbls <- paste(names(mytable1), "\n", mytable1, sep="")
+pie(mytable1, labels = lbls, 
+   main="Pie Chart of Distribution by Race")
+```
+
+<b> Age </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+# Change line color and fill color
+ggplot(icu, aes(x=Age))+
+  geom_density(color="darkblue", fill="lightblue")+
+  labs(title = "Distribution of Age")+
+  xlab("Density") + ylab("Systolic Blood Pressure (Years)")
+```
+
+```{r message=FALSE, warning=FALSE, error=FALSE }
+labs <- c(paste(seq(0, 95, by = 5), seq(0 + 5 - 1, 100 - 1, by = 5),
+                sep = "-"), paste(100, "+", sep = ""))
+icu$AgeGroup <- cut(icu$Age, breaks = c(seq(0, 100, by = 5), Inf), labels = labs, right = FALSE)
+head(icu[c("Age", "AgeGroup")], 15)
+
+SurT<-table(icu$Status)
+SurT
+prop.table(SurT)
+round(100*prop.table(SurT),digits=0)
+cross<-table(icu$Status,icu$AgeGroup)
+round(prop.table(cross,2)*100,digits=0)
+barplot(prop.table(cross,2)*100,
+xlab='Age',ylab='Percentages',main="Percentage survival by
+Age",col=c("lightblue","lightcyan"),
+legend=rownames(cross), args.legend = list(x = "topright"))
+```
+
+
+
+<b> DEMOGRAPHIC VARIABLES CONCLUSION </b>
+<br>
+Based on analysis of the demographics of the participants in the study, it can be concluded that a majority of participants are male, and white. In addition, majority of the participants in the study are above the age of 50 with a smaller population less than 25. This indicates that there isn't a normal distribution of for the participants in this study because there are two distinct populations in the distribution.
+<br>
+In addition, the graph above that shows the percentage survival by age shows that in all age categories except 90-94 there are more participants that lived than died, and that in general younger participants were more likely to live compared to older participants.
+
 ###Admissions
+<h4><b> ADMISSIONS </b></h4>
+
+<b> Previous </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable1 <- table(icu$Previous)
+lbls <- paste(names(mytable1), "\n", mytable1, sep="")
+pie(mytable1, labels = lbls, 
+   main="Pie Chart of Distribution by Previous Admission into the ICU Within 6 Months")
+```
+
+
+<b> Type </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable1 <- table(icu$Type)
+lbls <- paste(names(mytable1), "\n", mytable1, sep="")
+pie(mytable1, labels = lbls, 
+   main="Pie Chart of Distribution by Type of Admission")
+```
+
+<b> Service </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable1 <- table(icu$Service)
+lbls <- paste(names(mytable1), "\n", mytable1, sep="")
+pie(mytable1, labels = lbls, 
+   main="Pie Chart of Distribution by Type of Service")
+```
+
+<b> ADMISSIONS VARIABLES CONCLUSION </b>
+<br>
+Analysis of the graphs above indicate that a majority of participants had not been admitted into the ICU in the last 6 months and that the majority of the admissions were emergency admissions. In addition a majority of the type of service provided to participants were surgical, though the difference was not substantial (107 vs 93)
+
+
+
+
 ###Clinical
+
+<h4><b> CLINICAL </b></h4>
+<br>
+<b> Heart Rate </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+# Change line color and fill color
+ggplot(icu, aes(x=HeartRate))+
+  geom_density(color="darkblue", fill="lightblue")+
+  labs(title = "Distribution of Heart Rate")+
+  ylab("Density") + xlab("Heart Rate (Beats per minute)")
+```
+The graph above shows that heart rates of participants in this study is not normally distributed and skewed towards the 75. However, considering that the average normal resting heart rate of individuals is between 60 and 100 beats per minute, this can be justified and this indicates that a majority of the sample had normal resting heart rates. 
+
+<b> Systolic Blood Pressure </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+# Change line color and fill color
+ggplot(icu, aes(x=Systolic))+
+  geom_density(color="darkblue", fill="lightblue")+
+  labs(title = "Distribution of Systolic Blood Pressure")+
+  ylab("Density") + xlab("Systolic Blood Pressure (mmHg)")
+```
+The graph above shows that a majority of participants had a systolic blood pressure around 127 mm Hg. Considering that the normal systolic blood pressure is 12 mm Hg, this indicates that a large portion of the sample had systolic blood pressures above the normal level. 
+<br>
+
+<b> Cancer </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable1 <- table(icu$Cancer)
+lbls <- paste(names(mytable1), "\n", mytable1, sep="")
+pie(mytable1, labels = lbls, 
+   main="Pie Chart of Distribution by Cancer Involvement")
+```
+<b> Renal Failure </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable1 <- table(icu$Renal)
+lbls <- paste(names(mytable1), "\n", mytable1, sep="")
+pie(mytable1, labels = lbls, 
+   main="Pie Chart of Distribution by Renal Failure")
+```
+
+<b> Infection </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable1 <- table(icu$Infection)
+lbls <- paste(names(mytable1), "\n", mytable1, sep="")
+pie(mytable1, labels = lbls, 
+   main="Pie Chart of Distribution by Infection Involvement")
+```
+
+<b> CPR </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable1 <- table(icu$CPR)
+lbls <- paste(names(mytable1), "\n", mytable1, sep="")
+pie(mytable1, labels = lbls, 
+   main="Pie Chart of Distribution by CPR")
+```
+
+<b> Fracture </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable1 <- table(icu$Fracture)
+lbls <- paste(names(mytable1), "\n", mytable1, sep="")
+pie(mytable1, labels = lbls, 
+   main="Pie Chart of Distribution by Fracture")
+```
+
+<b> PO2 </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable1 <- table(icu$PO2)
+lbls <- paste(names(mytable1), "\n", mytable1, sep="")
+pie(mytable1, labels = lbls, 
+   main="Pie Chart of Distribution by PO2")
+```
+
+<b> PH </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable1 <- table(icu$PH)
+lbls <- paste(names(mytable1), "\n", mytable1, sep="")
+pie(mytable1, labels = lbls, 
+   main="Pie Chart of Distribution by PH")
+```
+
+<b> PCO2 </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable1 <- table(icu$PCO2)
+lbls <- paste(names(mytable1), "\n", mytable1, sep="")
+pie(mytable1, labels = lbls, 
+   main="Pie Chart of Distribution by PCO2")
+```
+
+<b> Bicarbonate </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable1 <- table(icu$Bicarbonate)
+lbls <- paste(names(mytable1), "\n", mytable1, sep="")
+pie(mytable1, labels = lbls, 
+   main="Pie Chart of Distribution by Bicarbonate")
+```
+
+<b> Creatinine </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable1 <- table(icu$Creatinine)
+lbls <- paste(names(mytable1), "\n", mytable1, sep="")
+pie(mytable1, labels = lbls, 
+   main="Pie Chart of Distribution by Creatinine")
+```
+
+<b> Consciousness </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable1 <- table(icu$Consciousness)
+lbls <- paste(names(mytable1), "\n", mytable1, sep="")
+pie(mytable1, labels = lbls, 
+   main="Pie Chart of Distribution by Consciousness")
+```
+
+<b> CLINICAL VARIABLES CONCLUSION </b>
+
+From the graphs above the following conclusions can be made:
+- A majority of the participants in the study do not have cancer involved
+- A majority of the participants in the study do not have renal failure
+- A majority of the participants in the study do not have infection involved
+- A majority of the participants in the study did not have CPR prior to admission
+- A majority of the participants in the study did not have a fractred bone
+- A majority of the participants in the study did not have partial oxygen levels from blood gases under 60.
+- A majority of the participants in the study did not have a pH from blood gas under 7.25. Normal blood pH levels is 7.38. This indicates that a majority of participants did not have acidic blood but this does not suggest that participants did not have alkaline blood.
+- A majority of the participants in the study did not have partial carbon dioxide levels from blood gas over 45. Normal CO2 levels in the blood are 38-42 mmHg therefore, this indicates that participants did not have dangerous CO2 levels in thier blood.
+- A majority of participants in the study did not have bicarbonate from blood gas under 18. Normal bicarbonate levels are 22 mEq/L. Therefore, the results indicate that a majority of participants did not have dangerously low levels of bicarbonate but could have had higher than normal levels.
+- A majority of participants in the study did not have a creatinine from blood gas over 2.0 mg/dL. Normal creatinine levels in the blood are between 0.6 - 1.2 mg/dL. Therefore participants did not have abnormally high levels of creatinine in thier blood. 
+- A majority of participants in the study were not in a coma or deep stupor, but there were more coma participants than those in a deep stupor
+
+##Uniformity
+
+<b>Uniformity of variables </b>
+<br>
+Status
+<br>
+
+H0: There is no statistically significant difference between the two status groups and therefore, the groups are uniformly distributed. P-value > 0.05
+
+Ha: The two status groups are not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+ggplot(data.frame(icu), aes(x=icu$Status)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "Status", y= "Frequency")
+```
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(Status))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.5,0.5)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+Sex
+<br>
+
+H0: There is no statistically significant difference between males and females and therefore, the groups are uniformly distributed. P-value > 0.05
+
+Ha: Sex is not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+ggplot(data.frame(icu), aes(x=icu$Sex)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "Sex", y= "Frequency")
+```
+
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(Sex))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.5,0.5)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+Race
+<br>
+
+H0: There is no statistically significant difference between the three races in the study, therefore, the groups are uniformly distributed. P-value > 0.05
+
+Ha: Race is not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+ggplot(data.frame(icu), aes(x=icu$Race)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "Race", y= "Frequency")
+```
+
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(Race))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.3333333333,0.3333333333,0.3333333333)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+
+Service
+<br>
+
+H0: There is no statistically significant difference between medical and surgical types of service and therefore, the groups are uniformly distributed. P-value > 0.05
+
+Ha: Service is not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+ggplot(data.frame(icu), aes(x=icu$Service)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "Service", y= "Frequency")
+```
+
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(Service))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.5,0.5)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+
+Cancer
+<br>
+
+H0: There is no statistically significant difference between participants with cancer involvement and those without and therefore, the groups are uniformly distributed. P-value > 0.05
+
+Ha: Cancer is not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+ggplot(data.frame(icu), aes(x=icu$Cancer)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "Cancer", y= "Frequency")
+```
+
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(Cancer))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.5,0.5)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+
+Renal
+<br>
+
+H0: There is no statistically significant difference between the renal failure and no renal failure groups and therefore, the groups are uniformly distributed. P-value > 0.05
+
+Ha: Renal is not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+ggplot(data.frame(icu), aes(x=icu$Renal)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "Renal", y= "Frequency")
+```
+
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(Renal))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.5,0.5)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+
+Infection
+<br>
+
+H0: There is no statistically significant difference between the infection involved and no infection involved groups, therefore, the groups are uniformly distributed. P-value > 0.05
+
+Ha: Infection is not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+ggplot(data.frame(icu), aes(x=icu$Infection)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "Infection", y= "Frequency")
+```
+
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(Infection))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.5,0.5)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+
+CPR
+<br>
+
+H0: There is no statistically significant difference between CPR before admission and no CPR before admission groups, therefore, the groups are uniformly distributed. P-value > 0.05
+
+Ha: CPR is not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+ggplot(data.frame(icu), aes(x=icu$CPR)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "CPR", y= "Frequency")
+```
+
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(CPR))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.5,0.5)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+
+Type
+<br>
+
+H0: There is no statistically significant difference between elective and emergency groups and therefore, the groups are uniformly distributed. P-value > 0.05
+
+Ha: Type is not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+ggplot(data.frame(icu), aes(x=icu$Type)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "Type", y= "Frequency")
+```
+
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(Type))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.5,0.5)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+
+Fracture
+<br>
+
+H0: There is no statistically significant difference between participants with a fractured bone and those without. Therefore, the groups are uniformly distributed. P-value > 0.05
+
+Ha: Fracture is not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+ggplot(data.frame(icu), aes(x=icu$Fracture)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "Fracture", y= "Frequency")
+```
+
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(Fracture))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.5,0.5)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+PO2
+<br>
+
+H0: There is no statistically significant difference between participants with PO2 levels below 60 and those without. Therefore, the groups are uniformly distributed. P-value > 0.05
+
+Ha: PO2 is not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+ggplot(data.frame(icu), aes(x=icu$PO2)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "PO2", y= "Frequency")
+```
+
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(PO2))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.5,0.5)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+
+PH
+<br>
+
+H0: There is no statistically significant difference between pH under 7.25 and the group without. Therefore, the groups are uniformly distributed. P-value > 0.05
+
+Ha: PH is not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+ggplot(data.frame(icu), aes(x=icu$PH)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "PH", y= "Frequency")
+```
+
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(PH))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.5,0.5)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+
+Cancer
+<br>
+
+H0: There is no statistically significant difference between the cancer involved and no cancer involved groups. Therefore, the groups are uniformly distributed. P-value > 0.05
+
+Ha: Cancer is not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+ggplot(data.frame(icu), aes(x=icu$Bicarbonate)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "Cancer", y= "Frequency")
+```
+
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(Bicarbonate))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.5,0.5)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+Creatinine
+<br>
+
+H0: There is no statistically significant difference between the creatinine over 2.0 group and those without. Therefore, the groups are uniformly distributed. P-value > 0.05
+
+Ha: Creatinine is not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+ggplot(data.frame(icu), aes(x=icu$Creatinine)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "Creatinine", y= "Frequency")
+```
+
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(Creatinine))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.5,0.5)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+Consciousness
+<br>
+
+H0: There is no statistically significant difference between the three consciouss groups. Therefore, the groups are uniformly distributed. P-value > 0.05
+
+Ha: Consciousness is not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+ggplot(data.frame(icu), aes(x=icu$Consciousness)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "Consciousness", y= "Frequency")
+```
+
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(Consciousness))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.3333333333,0.3333333333,0.3333333333)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+
+PCO2
+<br>
+
+H0: There is no statistically significant difference between the two PCO2 groups. Therefore they are uniformly distributed. P-value > 0.05
+
+Ha: PCO2 is not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+library (ggplot2)
+ggplot(data.frame(icu), aes(x=icu$PCO2)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "PCO2", y= "Frequency")
+```
+
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(PCO2))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.5,0.5)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+<p align="justify">
+<b> UNFORMITY CONCLUSION </b>
+Based on the graphs and resuts for the chi-squared tests above, the P-Values of all variables are less than 0.05 which means that the null hypotheses can be rejected. This indicates that the variable are not uniformly distirbuted The exception to this is the variable service which has a P-Value greater than 0.05 which indicates that the null hypothesis cannot be rejected. Based on this we can conclude that the variable service is uniformly distributed.
+</p>
+
+
+
+## Normality Tests
+<center><h3><b>Normality Testing</b></h3></center>
+
+<style>
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
+}
+th, td {
+  padding: 5px;
+  vertical-align:top;
+}
+th {
+  text-align: left;
+}
+</style>
+<b> Age </b>
+<br>
+Normality Testing: 
+To test for noramilty of the continuous variables age, heart rate, and systolic blood pressure the Shapiro Wilks test was used. The distribution of the data was mapped using a QQ plot.
+<br>
+Hypotheses:
+<br>
+Ho: Systolic BP is normally distributed. P-Value > 0.05
+<br>
+Ha: Systolic BP is not normally distributed. P- Value <0.05
+<br>
+<table>
+<tr>
+<td> QQ Plot </td>
+<td> Shaprio-Wilk </td>
+<td> Conclusion </td>
+</tr>
+<tr>
+<td>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+with(icu, qqPlot(Age, dist="norm", id=list(method="y", n=2, 
+  labels=rownames(icu))))
+```
+</td>
+<td>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+normalityTest(~Age, test="shapiro.test", data=icu)
+```
+</td>
+<td>
+Based on the Shapiro-Wilk test, since the p-value is < 0.05, the null hypothesis can be rejected. Therefore, it can be concluded that age is not normally distributed.
+</td>
+</tr>
+</table>
+<br>
+<b> Systolic Blood Pressure </b>
+<br>
+Hypotheses:
+<br>
+Ho: Systolic BP is normally distributed. P-Value > 0.05.
+<br>
+Ha: Systolic BP is not normally distributed. P-Value <0.05.
+<br>
+<table>
+<tr>
+<td> QQ Plot </td>
+<td> Shaprio-Wilk </td>
+<td> Conclusion </td>
+</tr>
+<tr>
+<td>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+with(icu, qqPlot(Systolic, dist="norm", id=list(method="y", n=2, 
+  labels=rownames(icu))))
+```
+</td>
+<td>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+normalityTest(~Systolic, test="shapiro.test", data=icu)
+```
+</td>
+<td>
+From the Shapiro-Wilk test of the systolic blood pressure continuous variable, the P-Value was determined to be 0.02. Since this value is less than 0.05 we can reject the null hypothesis and conclude that systolic blood pressure is not normally distributed.
+</td>
+</tr>
+</table>
+
+<b> Heart Rate </b>
+<br>
+Hypotheses:
+<br>
+Ho: Heart rate is normally distributed. P-Value > 0.05.
+<br>
+Ha: Heart rate BP is not normally distributed. P-Value <0.05.
+<br>
+<table>
+<tr>
+<td> QQ Plot </td>
+<td> Shaprio-Wilk </td>
+<td> Conclusion </td>
+</tr>
+<tr>
+<td>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+with(icu, qqPlot(HeartRate, dist="norm", id=list(method="y", n=2, 
+  labels=rownames(icu))))
+```
+</td>
+<td>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+normalityTest(~HeartRate, test="shapiro.test", data=icu)
+```
+</td>
+<td>
+Based on the Shapiro-Wilk test of heart rate, the P-Value was determined to be 0.045. Since this value is less than 0.05 we can reject the null hypothesis and conclude that heart rate is not normally distributed. 
+</td>
+</tr>
+</table>
+
+```{r message=FALSE, warning=FALSE, error=FALSE }
+normalityTest(~HeartRate, 
+  test="ad.test", data=icu)
+```
+
+Because the P-Value obtained from Shapiro-Wilk test was close 0.05 the Anderson-Darling normality test was conducted to further investigate the normality of the heart rate data. The P-Value obtained from the Anderson-Darling normality test was 0.027 which is less than 0.05 meaning we can reject the null hypothesis and conclude that heart rate is not normally distributed.
+
+<b> NORMALITY TESTING CONCUSION </b>
+<br>
+The continuous variables age, systolic blood pressure and heart rate are all not normally distributed. 
+
+
+##Correlation
+<center><h3><b>Correlation</b></h3></center>
+
+Measuring the strength of assocition between two quantitative variables:
+<br>
+The quantitative variables in this study are heart rate, age and systolic blood pressure. Correlational analyses are used to look at the relationships between two varaibles to determine if the two variables are related to each other. Because age, heart rate and systolic blood pressure are all not normally distributed, the spearman's rank correlation coefficient was used to test correaltion between these variables.
+<br>
+<b> Spearman Correlation </b>
+
+```{r message=FALSE, warning=FALSE, error=FALSE }
+library (Hmisc)
+rcorr.adjust(icu[,
+  c("Age","HeartRate","Systolic"
+  )], type="spearman", 
+  use="complete")
+
+```
+
+<b> Correaltion Between Heart Rate and Systolic Blood Pressure </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+library(plotly) 
+p <- ggplot(icu, aes(HeartRate,Systolic)) + geom_point()
+ ggplotly(p)
+```
+
+
+Ho: Systolic and HeartRate are not correlated.P-value> 0.05.
+<br>
+Ha: Systolic and HeartRate are correlated. P-value<0.05.
+<br>
+Based on the table above, we can cannot reject the null hypothesis because the p-value is greater than 0.05. Therefore we conclude that systolic and heart rate are not correlated.
+<br>
+Based on the table above, we can cannot reject the null hypothesis because the p-value of 0.4630  is greater than 0.05. Therefore we conclude that heart rate and systolic blood pressure are not correlated. 
+<br>
+Systolic blood pressure and heart rate have a correlation value of -0.0522 which is a weak negative correlation and means that 5.22% of the variation in systolic blood pressure is due to heart rate and vice versa. This is seen in the graph above which shows no distinct correlation between heart rate and systolic blood pressure. Based on this it can be concluded that none of the variation in systolic blood pressure is due to variation in heart rate.
+
+<b> Correaltion Between Age and Systolic Blood Pressure </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+library(plotly) 
+p <- ggplot(icu, aes(Age,Systolic)) + geom_point()
+ ggplotly(p)
+```
+Hypothesis Testing:
+<br>
+Ho: Age and Systolic Blood Pressure are not correlated.P-value> 0.05.
+<br>
+Ha: Age and Systolic Blood pressure are correlated. P-value<0.05.
+<br>
+Conclusion:
+<br>
+Based on the table above, we can cannot reject the null hypothesis because the p-value of  0.4540 is greater than 0.05. Therefore we conclude that age and systolic blood pressure are not correlated. 
+<br>
+Systolic blood pressure and age have a correlation value of 0.0532 which is a weak positive correlation and means that 5.32% of the variation in systolic blood pressure is due to age and vice versa. This is seen in the graph above which shows no distinct correlation between age and systolic blood pressure. Based on this it can be concluded that none of the variation in systolic blood pressure is due to variation in age.
+
+
+
+<b> Correaltion Between Heart Rate and Age </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+library(plotly) 
+p <- ggplot(icu, aes(Age,HeartRate)) + geom_point()
+ ggplotly(p)
+```
+Hypothesis Testing:
+<br>
+Ho: Age and HeartRate are not correlated.P-value> 0.05.
+<br>
+Ha: Age and HeartRate are correlated. P-value<0.05.
+<br>
+Conclusion:
+Based on the table above, we can cannot reject the null hypothesis because the p-value of 0.8089 is greater than 0.05. Therefore we conclude that age and heart rate are not correlated. <br>
+Heart rate and age have a correlation value of 0.0172 which is a weak positive correlation and means that 1.72% of the variation in heart rate is due to age and vice versa. This is seen in the graph above which shows no distinct correlation between age and heart rate. Based on this it can be concluded that none of the variation in heart rate is due to variation in age. 
+<br>
+
+To test the correlation between categorical variables dummy variables were used.
+
+
+
+From the correlation matrix above, we can conclude that there is a strong and significant correlation between the variables:
+- Type and service
+- Consciousness and status
+- Consciousness and CPR
+- PO2 and PCO2
+- PCO2 and PH
+The 'X' represent correlation between variables that are not significant. Therefore, these relationships must be considered during regression analysis.
+
+
+<b> CORRELATION TESTING CONCLUSION <b>
+<br>
+The variables age, heart rate, and systolic blood pressure are all not correlated with each other. 
+
 
 ##Predictive Model
 
